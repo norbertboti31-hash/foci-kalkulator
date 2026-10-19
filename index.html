@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foci gól- és szögletkalkulátor</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#142238;--line:#2b405b;--text:#f2f6ff;--muted:#b3c1d6;--accent:#62e6aa}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1220,#183b36);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);min-height:100vh;padding:18px}main{max-width:720px;margin:auto}.brand{color:var(--accent);font-weight:800;letter-spacing:.12em;font-size:.8rem}h1{font-size:clamp(1.8rem,6vw,2.6rem);margin:.5rem 0}p{color:var(--muted);line-height:1.5}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:16px}label{display:block;color:var(--muted);font-size:.92rem;margin:0 0 7px}input,select{width:100%;padding:13px;border-radius:10px;border:1px solid #405570;background:#0c1728;color:var(--text);font-size:16px;margin-bottom:14px}.teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}button{width:100%;padding:14px;border:0;border-radius:11px;background:var(--accent);color:#082419;font-size:1rem;font-weight:800;cursor:pointer}.result{display:none}.score{display:flex;align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px 0}.team{flex:1;overflow-wrap:anywhere;font-weight:700}.digits{font-size:2.3rem;font-weight:900;white-space:nowrap}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#0c1728;border:1px solid var(--line);padding:13px 7px;border-radius:12px;text-align:center}.stat strong{display:block;font-size:1.4rem;color:var(--accent)}.stat span{font-size:.8rem;color:var(--muted)}.note{font-size:.82rem}.error{display:none;color:#ffb8b8}@media(max-width:500px){body{padding:12px}.panel{padding:15px}.teams{grid-template-columns:1fr;gap:0}.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}.digits{font-size:1.8rem}}
+</style>
+</head>
+<body><main>
+<div class="brand">MATCH LAB • BÉTA</div>
+<h1>⚽ Foci gól- és szögletkalkulátor</h1>
+<p>Írd be a két csapat nevét, válassz mérkőzésprofilt, és készíts egy gyors, tájékoztató becslést. Ez az egyszerű változat nem használ élő csapatstatisztikákat.</p>
+<section class="panel">
+<div class="teams"><div><label for="home">Hazai csapat</label><input id="home" placeholder="Pl. Liverpool" maxlength="60"></div><div><label for="away">Vendégcsapat</label><input id="away" placeholder="Pl. Arsenal" maxlength="60"></div></div>
+<label for="profile">Mérkőzésprofil</label><select id="profile"><option value="normal">Átlagos mérkőzés</option><option value="low">Kevés gólos, zártabb meccs</option><option value="high">Nyílt, sok helyzetes meccs</option></select>
+<button id="calculate">Becslés készítése</button><p class="error" id="error">Írd be mindkét csapat nevét!</p>
+</section>
+<section class="panel result" id="result" aria-live="polite"><div class="brand">BECSÜLT EREDMÉNY</div><div class="score"><div class="team" id="homeName"></div><div class="digits"><span id="hg">1</span> – <span id="ag">1</span></div><div class="team" id="awayName"></div></div><div class="stats"><div class="stat"><strong id="goals">2</strong><span>Becsült összgól</span></div><div class="stat"><strong id="corners">9–11</strong><span>Becsült összes szöglet</span></div><div class="stat"><strong id="btts">Közepes</strong><span>Mindkét csapat gólt szerez</span></div></div><p class="note">Fontos: a csapatnevek önmagukban nem adnak valós formát vagy csapaterősséget. Ez általános, véletlenített becslés, nem garantált előrejelzés és nem fogadási tanács.</p></section>
+<section class="panel"><strong>Hogyan lehet pontosabb?</strong><p>A hitelesebb becsléshez a csapatok utolsó 5–10 mérkőzésének rúgott és kapott góljai, szögletei, valamint a hazai/idegenbeli teljesítmény szükséges. Ez a változat ezeket még nem tölti le automatikusan.</p></section>
+</main>
+<script>
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rngFor(seed){let x=seed||1;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296}}
+function poisson(lambda,r){let L=Math.exp(-lambda),k=0,p=1;do{k++;p*=r()}while(p>L&&k<30);return k-1}
+document.getElementById('calculate').addEventListener('click',()=>{let h=document.getElementById('home').value.trim(),a=document.getElementById('away').value.trim(),err=document.getElementById('error'),res=document.getElementById('result');if(!h||!a){err.style.display='block';res.style.display='none';return}err.style.display='none';let profile=document.getElementById('profile').value,base=profile==='low'?1.8:profile==='high'?3.2:2.5,r=rngFor(hash(h.toLowerCase()+'|'+a.toLowerCase()+'|'+profile));let hg=poisson(base*.55,r),ag=poisson(base*.45,r),corners=(profile==='low'?7:profile==='high'?10:8)+Math.floor(r()*3);document.getElementById('homeName').textContent=h;document.getElementById('awayName').textContent=a;document.getElementById('hg').textContent=hg;document.getElementById('ag').textContent=ag;document.getElementById('goals').textContent=hg+ag;document.getElementById('corners').textContent=(corners)+'–'+(corners+2);document.getElementById('btts').textContent=hg>0&&ag>0?'Valószínűbb':hg===0&&ag===0?'Kevésbé valószínű':'Közepes';res.style.display='block';res.scrollIntoView({behavior:'smooth',block:'start'})});
+</script></body></html>
